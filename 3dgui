@@ -1,0 +1,189 @@
+Attribute VB_Name = "GUI_3D"
+Option Explicit
+Public Declare Function GetPixel Lib "gdi32" (ByVal hdc As Long, ByVal X As Long, ByVal Y As Long) As Long
+Public Declare Function SetPixel Lib "gdi32" (ByVal hdc As Long, ByVal X As Long, ByVal Y As Long, ByVal crColor As Long) As Long
+Global rRed As Long, rBlue As Long, rGreen As Long
+
+Public Const BEVEL_INSET = 1
+Public Const BEVEL_RAISED = 2
+
+Public Function RGBfromLONG(LongCol As Long)
+' Get The Red, Blue And Green Values Of A Colour From The Long Value
+Dim Blue As Double, Green As Double, Red As Double, GreenS As Double, BlueS As Double
+Blue = Fix((LongCol / 256) / 256)
+Green = Fix((LongCol - ((Blue * 256) * 256)) / 256)
+Red = Fix(LongCol - ((Blue * 256) * 256) - (Green * 256))
+rRed = Red: rBlue = Blue: rGreen = Green
+End Function
+
+
+Function LightenPixel(pixelLong As Long, percent As Integer)
+Dim newVal As Integer, C As Long, opRed As Long, opGreen As Long, opBlue As Long
+newVal = percent * 5
+C = pixelLong
+RGBfromLONG C
+opRed = rRed
+opGreen = rGreen
+opBlue = rBlue
+rRed = rRed + newVal
+If rRed > -1 And rRed < 256 Then opRed = rRed
+
+rGreen = rGreen + newVal
+If rGreen > -1 And rGreen < 256 Then opGreen = rGreen
+rBlue = rBlue + newVal
+If rBlue > -1 And rBlue < 256 Then opBlue = rBlue
+If rRed <> 1000 Then
+    C = RGB(opRed, opGreen, opBlue)
+    LightenPixel = C
+Else
+    LightenPixel = vbWhite
+End If
+End Function
+
+
+Function DarkenPixel(pixelLong As Long, percent As Integer) As Long
+Dim newVal As Integer, C As Long, opRed As Long, opGreen As Long, opBlue As Long
+newVal = percent * -5
+C = pixelLong
+RGBfromLONG C
+opRed = rRed
+opGreen = rGreen
+opBlue = rBlue
+rRed = rRed + newVal
+If rRed > -1 And rRed < 256 Then opRed = rRed
+
+rGreen = rGreen + newVal
+If rGreen > -1 And rGreen < 256 Then opGreen = rGreen
+rBlue = rBlue + newVal
+If rBlue > -1 And rBlue < 256 Then opBlue = rBlue
+If rRed <> 1000 Then
+    C = RGB(opRed, opGreen, opBlue)
+    DarkenPixel = C
+Else
+    DarkenPixel = vbBlack
+End If
+End Function
+
+
+Sub Control_3DFrame(C As Control, frm As Object, color As Long, Optional FirstBevel As Integer = 2, Optional SecondBevel As Integer = 1, Optional Filled As Boolean = True)
+Dim LightColor As Long, DarkColor As Long, TempColor As Long
+Dim X As Integer, Y As Integer
+LightColor = LightenPixel(color, 25)
+DarkColor = DarkenPixel(color, 25)
+
+frm.ScaleMode = 3
+
+If FirstBevel = BEVEL_INSET Then
+    TempColor = LightColor
+    LightColor = DarkColor
+    DarkColor = TempColor
+End If
+
+
+frm.Line (C.Left - 10, C.Top - 10)-(C.Left + C.Width + 10, C.Top - 10), LightColor, BF
+frm.Line (C.Left - 10, C.Top - 10)-(C.Left - 10, C.Top + C.Height + 10), LightColor, BF
+frm.Line (C.Left - 10, C.Top + C.Height + 10)-(C.Left + C.Width + 10, C.Top + C.Height + 10), DarkColor, BF
+frm.Line (C.Left + C.Width + 10, C.Top - 10)-(C.Left + C.Width + 10, C.Top + C.Height + 10), DarkColor, BF
+
+If Filled = True Then
+    For X = C.Left - 9 To C.Left + C.Width + 9
+        frm.Line (X, C.Top - 9)-(X, C.Top + C.Height + 9), color, BF
+    Next X
+End If
+
+If SecondBevel = BEVEL_INSET Then
+    TempColor = LightColor
+    LightColor = DarkColor
+    DarkColor = TempColor
+End If
+
+
+
+'c.left - 5 = c.left - 5
+frm.Line (C.Left - 5, C.Top - 5)-(C.Left + C.Width + 5, C.Top - 5), LightColor, BF
+frm.Line (C.Left - 5, C.Top - 5)-(C.Left - 5, C.Top + C.Height + 5), LightColor, BF
+frm.Line (C.Left - 5, C.Top + C.Height + 5)-(C.Left + C.Width + 5, C.Top + C.Height + 5), DarkColor, BF
+frm.Line (C.Left + C.Width + 5, C.Top - 5)-(C.Left + C.Width + 5, C.Top + C.Height + 5), DarkColor, BF
+
+If Filled = True Then
+    For X = C.Left - 4 To C.Left + C.Width + 4
+        frm.Line (X, C.Top - 4)-(X, C.Top + C.Height + 4), color, BF
+    Next X
+End If
+End Sub
+
+
+
+
+Sub Control_3DBorder(C As Control, frm As Object, Optional color As Long = "&H00C0C0C0", Optional Bevel As Integer = BEVEL_RAISED)
+Dim C1 As Long, C2 As Long, C3 As Long
+Dim X As Integer
+
+C2 = color
+C1 = DarkenPixel(C2, 25)
+C3 = LightenPixel(C2, 25)
+
+If Bevel = BEVEL_INSET Then
+    C1 = LightenPixel(C2, 25)
+    C3 = DarkenPixel(C2, 25)
+End If
+
+'Left border
+For X = 1 To 3
+    frm.Line (C.Left - X, C.Top - 2)-(C.Left - X, C.Top + C.Height + 2), C1, BF
+Next X
+
+For X = 4 To 6
+    frm.Line (C.Left - X, C.Top - 6)-(C.Left - X, C.Top + C.Height + 5), C2, BF
+Next X
+
+For X = 7 To 9
+    frm.Line (C.Left - X, C.Top - 7)-(C.Left - X, C.Top + C.Height + 8), C3, BF
+Next X
+
+
+'Right border
+For X = 1 To 3
+    frm.Line (C.Left + C.Width + X - 1, C.Top - 2)-(C.Left + C.Width + X, C.Top + C.Height - 1), C3, BF
+Next X
+
+For X = 4 To 6
+    frm.Line (C.Left + C.Width + X - 1, C.Top - 5)-(C.Left + C.Width + X, C.Top + C.Height + 5), C2, BF
+Next X
+
+For X = 7 To 9
+    frm.Line (C.Left + C.Width + X - 1, C.Top - 8)-(C.Left + C.Width + X, C.Top + C.Height + 7), C1, BF
+Next X
+
+
+'Top Border
+frm.Line (C.Left - 2, C.Top - 1)-(C.Left + C.Width, C.Top - 1), C1, BF
+frm.Line (C.Left - 2, C.Top - 2)-(C.Left + C.Width + 1, C.Top - 2), C1, BF
+frm.Line (C.Left - 3, C.Top - 3)-(C.Left + C.Width + 2, C.Top - 3), C1, BF
+
+For X = 4 To 6
+    frm.Line (C.Left - 5, C.Top - X)-(C.Left + C.Width + 5, C.Top - X), C2, BF
+Next X
+
+frm.Line (C.Left - 9, C.Top - 7)-(C.Left + C.Width + 7, C.Top - 7), C3, BF
+frm.Line (C.Left - 9, C.Top - 8)-(C.Left + C.Width + 8, C.Top - 8), C3, BF
+frm.Line (C.Left - 9, C.Top - 9)-(C.Left + C.Width + 9, C.Top - 9), C3, BF
+
+
+
+'Bottom border
+frm.Line (C.Left, C.Top + C.Height)-(C.Left + C.Width + 2, C.Top + C.Height), C3, BF
+frm.Line (C.Left - 1, C.Top + C.Height + 1)-(C.Left + C.Width + 2, C.Top + C.Height + 1), C3, BF
+frm.Line (C.Left - 2, C.Top + C.Height + 2)-(C.Left + C.Width + 2, C.Top + C.Height + 2), C3, BF
+
+For X = 3 To 5
+    frm.Line (C.Left - 5, C.Top + C.Height + X)-(C.Left + C.Width + 5, C.Top + C.Height + X), C2, BF
+Next X
+
+
+'Where borders connect
+frm.Line (C.Left - 6, C.Top + C.Height + 6)-(C.Left + C.Width + 9, C.Top + C.Height + 6), C1, BF
+frm.Line (C.Left - 7, C.Top + C.Height + 7)-(C.Left + C.Width + 9, C.Top + C.Height + 7), C1, BF
+frm.Line (C.Left - 8, C.Top + C.Height + 8)-(C.Left + C.Width + 9, C.Top + C.Height + 8), C1, BF
+End Sub
+
